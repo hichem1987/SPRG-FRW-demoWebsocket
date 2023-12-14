@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Clock</title>
+
+    <!-- import javascript libraries -->
+    <script type="text/javascript" src="//cdn.jsdelivr.net/sockjs/0.3.4/sockjs.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <script type="text/javascript">
+            var stompClient = null;
+
+            function setConnected(connected) {
+
+            }
+
+			// 1- connect to a socket endpoint
+            function connect() {
+                var socket = new SockJS('/demo');
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, function(frame) {
+                    setConnected(true);
+                    console.log('Connected: ' + frame);
+
+					// 2 - suscribe to a channel
+                    stompClient.subscribe('/topic/time', function(messageOutput) {
+                        //showMessageOutput(JSON.parse(messageOutput.body));
+                        console.log(messageOutput.body);
+                        myShowMessage(messageOutput.body);
+                    });
+
+                    // subscribe to 2e channel
+                      stompClient.subscribe("/topic/chat", function(data) {
+                          console.log("receive new data from websocket");
+                          var message = data.body;
+                          ajouterElementHtmlLi("messages", message);
+                      });
+                });
+            }
+
+            function disconnect() {
+                if(stompClient != null) {
+                    stompClient.disconnect();
+                }
+                setConnected(false);
+                console.log("Disconnected");
+            }
+
+            function myShowMessage(message){
+                console.log("receive new data from websocket");
+                ajouterElementHtmlLi("time", message);
+            }
+
+            function ajouterElementHtmlLi(parentId, childText){
+                var li = document.createElement('li');
+                li.appendChild(document.createTextNode(childText));
+                document.getElementById(parentId).appendChild(li);
+            }
+        </script>
+</head>
+
+<body onload="connect()" onunload="disconnect()">
+
+<noscript>
+    <h2 style="color: #ff0000">Seems your browser doesn't support Javascript! Websocket relies on Javascript being enabled. Please enable Javascript and reload this page!</h2>
+</noscript>
+
+<h1>Chat</h1>
+<input type="text" id="chat-name" value="Oliver"/>
+<input type="text" id="chat-message" value="Hello"/>
+<input type="button" value="Send" onclick="sendToChat()"/>
+<div id="messages"></div>
+<script>
+
+    // sendToChat
+    function sendToChat() {
+        var name = document.getElementById("chat-name").value;
+        var chatMessage = document.getElementById("chat-message").value;
+        stompClient.send("/newMessage", {}, name + " : " + chatMessage);
+    }
+</script>
+
+
+<h1>Clock with WebSocket</h1>
+
+<div>
+    <h3>Time list:</h3>
+    <ol id="time"></ol>
+</div>
+
+
+
+</body>
+
+</html>
